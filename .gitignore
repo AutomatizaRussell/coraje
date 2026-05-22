@@ -1,0 +1,95 @@
+# ============================================================
+# CORAJE - Git ignore raíz
+# ============================================================
+
+# ============================================================
+# Variables de entorno / secretos
+# ============================================================
+.env
+.env.*
+!*.env.example
+
+# ============================================================
+# Node / Next.js - coraje-web
+# ============================================================
+
+# Dependencies
+coraje-web/node_modules/
+
+# Yarn / PnP artifacts, por si alguna herramienta los genera accidentalmente
+coraje-web/.pnp
+coraje-web/.pnp.*
+coraje-web/.yarn/*
+!coraje-web/.yarn/patches
+!coraje-web/.yarn/plugins
+!coraje-web/.yarn/releases
+!coraje-web/.yarn/versions
+
+# Testing
+coraje-web/coverage/
+
+# Next.js build output
+coraje-web/.next/
+coraje-web/out/
+
+# Production build output
+coraje-web/build/
+
+# Vercel
+coraje-web/.vercel/
+
+# TypeScript incremental cache / generated Next types
+coraje-web/*.tsbuildinfo
+coraje-web/next-env.d.ts
+
+# Debug logs
+coraje-web/npm-debug.log*
+coraje-web/yarn-debug.log*
+coraje-web/yarn-error.log*
+coraje-web/pnpm-debug.log*
+
+# ============================================================
+# Logs globales
+# ============================================================
+*.log
+
+# ============================================================
+# Certificados / llaves
+# ============================================================
+*.pem
+*.key
+*.crt
+
+# ============================================================
+# Python
+# ============================================================
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Si luego formalizas Python con uv y decides fijar versión Python,
+# evalúa si .python-version debe entrar o no a Git.
+# .python-version
+
+# ============================================================
+# n8n / archivos sensibles
+# ============================================================
+n8n/credentials/
+n8n/*.credentials.json
+
+# ============================================================
+# Sistema operativo / editores
+# ============================================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ============================================================
+# Archivos temporales / backups
+# ============================================================
+*.tmp
+*.temp
+*.bak

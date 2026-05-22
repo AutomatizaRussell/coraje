@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: helpdesk_db
+    environment:
+      # Llama dinámicamente a los secretos del .env
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      # Puerto 5433 para tu PC (DBeaver), Puerto 5432 para la red interna de Docker
+      - "5433:5432"
+    volumes:
+      - adm_helpdesk_data:/var/lib/postgresql/data
+    restart: always
+
+  n8n:
+    image: n8nio/n8n:2.20.7 
+    container_name: n8n_coraje
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - WEBHOOK_URL=http://localhost:5678/
+      # CRÍTICO: Sincronización de reloj para evitar desfases de SLA en los tickets
+      - GENERIC_TIMEZONE=America/Bogota
+      - TZ=America/Bogota
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      - db
+    restart: always
+
+volumes:
+  adm_helpdesk_data:
+    external: true  
+  n8n_data:

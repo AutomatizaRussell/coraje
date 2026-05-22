@@ -1,0 +1,210 @@
+-- =================================================================
+-- TRANSFORMACIÓN DE LA TABLA DE TICKETS
+-- =================================================================
+INSERT INTO helpdesk.fact_ticket (
+    consecutivo_sp,
+    titulo_ticket,
+    descripcion_problema,
+    id_cliente_contai,
+    id_solicitante,
+    id_area_destino,
+    id_asignado,
+    id_estado,
+    id_prioridad,
+    id_tipo_req,
+    fecha_creacion,
+    fecha_limite,
+    fecha_resolucion,
+    respuesta_final,
+    calificacion
+)
+SELECT
+    s.sp_id AS consecutivo_sp,
+
+    COALESCE(NULLIF(TRIM(s.payload->>'Id_Req'), ''), 'SIN ID') AS titulo_ticket,
+    COALESCE(NULLIF(TRIM(s.payload->>'Requerimiento'), ''), 'Sin descripción') AS descripcion_problema,
+
+    c.id_cliente_contai,
+
+    CASE
+        WHEN c.id_cliente_contai IS NOT NULL THEN NULL
+        ELSE sol.id_personal
+    END AS id_solicitante,
+
+    ad.id_area AS id_area_destino,
+    asig.id_personal AS id_asignado,
+
+    COALESCE(est.id_estado, est_default.id_estado) AS id_estado,
+
+    prio.id_prioridad,
+    tr.id_tipo_req,
+
+    CAST(s.payload->>'Created' AS TIMESTAMPTZ) AS fecha_creacion,
+
+    TO_DATE(
+        NULLIF(TRIM(s.payload->>'Fecha_Max_Respuesta'), ''),
+        'DD/MM/YYYY'
+    )::TIMESTAMPTZ AS fecha_limite,
+
+    CASE
+    WHEN NULLIF(TRIM(s.payload->>'Fecha_Respuesta'), '') IS NULL THEN NULL
+
+    -- Si la fecha de respuesta es anterior al día de creación, es inválida.
+    WHEN TO_DATE(
+            NULLIF(TRIM(s.payload->>'Fecha_Respuesta'), ''),
+            'DD/MM/YYYY'
+         ) < CAST(s.payload->>'Created' AS TIMESTAMPTZ)::DATE
+    THEN NULL
+
+    -- Si la respuesta fue el mismo día de creación, usamos fecha_creacion.
+    -- Esto evita violar el constraint porque SharePoint no trae hora de respuesta.
+    WHEN TO_DATE(
+            NULLIF(TRIM(s.payload->>'Fecha_Respuesta'), ''),
+            'DD/MM/YYYY'
+         ) = CAST(s.payload->>'Created' AS TIMESTAMPTZ)::DATE
+    THEN CAST(s.payload->>'Created' AS TIMESTAMPTZ)
+
+    -- Si fue en un día posterior, medianoche de ese día ya es válida.
+    ELSE TO_DATE(
+            NULLIF(TRIM(s.payload->>'Fecha_Respuesta'), ''),
+            'DD/MM/YYYY'
+         )::TIMESTAMPTZ
+END AS fecha_resolucion,
+
+    NULLIF(TRIM(s.payload->>'Respuesta'), '') AS respuesta_final,
+
+    CAST(
+        NULLIF(TRIM(s.payload->>'Calificaci_x00f3_n'), '')
+        AS INTEGER
+    ) AS calificacion
+
+FROM staging.sp_helpdesk_raw s
+
+LEFT JOIN core.dim_cliente_contai c
+    ON c.identificacion_fiscal = TRIM(s.payload->>'Nit')
+
+LEFT JOIN core.dim_personal sol
+    ON sol.correo_corporativo = TRIM(LOWER(s.payload->>'Title'))
+
+LEFT JOIN core.dim_personal asig
+    ON asig.correo_corporativo = TRIM(LOWER(s.payload->>'AsignadoA'))
+
+LEFT JOIN core.dim_area ad
+    ON core.norm_text(s.payload->>'OData__x00c1_rea_Destino') = core.norm_text(ad.nombre_area)
+
+LEFT JOIN helpdesk.dim_estado est
+    ON core.norm_text(s.payload->>'Estado') = core.norm_text(est.nombre_estado)
+
+LEFT JOIN helpdesk.dim_estado est_default
+    ON est_default.nombre_estado = 'ABIERTO'
+
+-- Normalización específica para resolver valores legacy de HelpDeskBd
+-- contra el catálogo actual de TipoReqHD.
+--
+-- Casos detectados:
+-- 1. ADMINISTRACIÓN:
+--    Tickets antiguos traen:
+--      Tipo_Requerimiento = AUTOMATIZACIÓN / TI
+--      Categoría1         = APLICACIÓN / SOPORTE / HARDWARE / SOFTWARE / REDES
+--
+--    Pero el catálogo actual espera:
+--      Tipo_Requerimiento = PROYECTOS Y TI
+--      Categoría1         = AUTOMATIZACIÓN / TI
+--      Categoría2         = APLICACIÓN / SOPORTE / HARDWARE / SOFTWARE / REDES
+--
+-- 2. REVISORÍA:
+--    Tickets antiguos traen:
+--      Tipo_Requerimiento = IMPUESTOS CONSULTA / IMPUESTOS
+--
+--    Pero el catálogo actual espera:
+--      Tipo_Requerimiento = IMPUESTOS ASESORATE
+--
+-- 3. ADMINISTRACIÓN-RECEPCIÓN / OTROS:
+--    Ticket trae categoría OTROS, pero catálogo tiene categoría NULL.
+--
+-- 4. REVISORÍA / OTROS:
+--    Ticket puede venir sin categoría, pero catálogo tiene categoría OTROS.
+LEFT JOIN LATERAL (
+    SELECT
+        CASE
+            WHEN core.norm_text(s.payload->>'OData__x00c1_rea_Destino') = 'ADMINISTRACION'
+             AND core.norm_text(s.payload->>'Tipo_Requerimiento') IN ('AUTOMATIZACION', 'TI')
+            THEN 'PROYECTOS Y TI'
+
+            WHEN core.norm_text(s.payload->>'OData__x00c1_rea_Destino') = 'REVISORIA'
+             AND core.norm_text(s.payload->>'Tipo_Requerimiento') IN ('IMPUESTOS CONSULTA', 'IMPUESTOS')
+            THEN 'IMPUESTOS ASESORATE'
+
+            ELSE core.norm_text(s.payload->>'Tipo_Requerimiento')
+        END AS tipo_requerimiento_match,
+
+        CASE
+            WHEN core.norm_text(s.payload->>'OData__x00c1_rea_Destino') = 'ADMINISTRACION'
+             AND core.norm_text(s.payload->>'Tipo_Requerimiento') IN ('AUTOMATIZACION', 'TI')
+            THEN core.norm_text(s.payload->>'Tipo_Requerimiento')
+
+            WHEN core.norm_text(s.payload->>'OData__x00c1_rea_Destino') = 'ADMINISTRACION-RECEPCION'
+             AND core.norm_text(s.payload->>'Tipo_Requerimiento') = 'OTROS'
+             AND core.norm_text(s.payload->>'Categor_x00ed_a1') = 'OTROS'
+            THEN NULL
+
+            WHEN core.norm_text(s.payload->>'OData__x00c1_rea_Destino') = 'REVISORIA'
+             AND core.norm_text(s.payload->>'Tipo_Requerimiento') IN ('IMPUESTOS CONSULTA', 'IMPUESTOS')
+            THEN core.norm_text(s.payload->>'Categor_x00ed_a1')
+
+            WHEN core.norm_text(s.payload->>'OData__x00c1_rea_Destino') = 'REVISORIA'
+             AND core.norm_text(s.payload->>'Tipo_Requerimiento') = 'OTROS'
+             AND core.norm_text(s.payload->>'Categor_x00ed_a1') IS NULL
+            THEN 'OTROS'
+
+            ELSE core.norm_text(s.payload->>'Categor_x00ed_a1')
+        END AS categoria_1_match,
+
+        CASE
+            WHEN core.norm_text(s.payload->>'OData__x00c1_rea_Destino') = 'ADMINISTRACION'
+             AND core.norm_text(s.payload->>'Tipo_Requerimiento') IN ('AUTOMATIZACION', 'TI')
+            THEN core.norm_text(s.payload->>'Categor_x00ed_a1')
+
+            WHEN core.norm_text(s.payload->>'OData__x00c1_rea_Destino') = 'REVISORIA'
+             AND core.norm_text(s.payload->>'Tipo_Requerimiento') IN ('IMPUESTOS CONSULTA', 'IMPUESTOS')
+            THEN NULL
+
+            ELSE core.norm_text(s.payload->>'Categor_x00ed_a2')
+        END AS categoria_2_match
+) tipo_legacy ON TRUE
+
+LEFT JOIN helpdesk.dim_tipo_requerimiento tr
+    ON tr.id_area = ad.id_area
+   AND core.norm_text(tr.tipo_requerimiento) = tipo_legacy.tipo_requerimiento_match
+   AND COALESCE(core.norm_text(tr.categoria_1), '') = COALESCE(tipo_legacy.categoria_1_match, '')
+   AND COALESCE(core.norm_text(tr.categoria_2), '') = COALESCE(tipo_legacy.categoria_2_match, '')
+
+
+
+
+LEFT JOIN helpdesk.dim_prioridad prio
+    ON UPPER(s.payload->>'Prioridad') LIKE '%' || prio.nombre_prioridad || '%'
+
+WHERE
+    (
+        c.id_cliente_contai IS NOT NULL
+        OR sol.id_personal IS NOT NULL
+    )
+
+ON CONFLICT (consecutivo_sp)
+DO UPDATE SET
+    titulo_ticket = EXCLUDED.titulo_ticket,
+    descripcion_problema = EXCLUDED.descripcion_problema,
+    id_cliente_contai = EXCLUDED.id_cliente_contai,
+    id_solicitante = EXCLUDED.id_solicitante,
+    id_area_destino = EXCLUDED.id_area_destino,
+    id_asignado = EXCLUDED.id_asignado,
+    id_estado = EXCLUDED.id_estado,
+    id_prioridad = EXCLUDED.id_prioridad,
+    id_tipo_req = EXCLUDED.id_tipo_req,
+    fecha_creacion = EXCLUDED.fecha_creacion,
+    fecha_limite = EXCLUDED.fecha_limite,
+    fecha_resolucion = EXCLUDED.fecha_resolucion,
+    respuesta_final = EXCLUDED.respuesta_final,
+    calificacion = EXCLUDED.calificacion,
+    ultima_actualizacion = NOW();
