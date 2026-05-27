@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["core", "helpdesk"]
+}
+
+model cliente_contai_recurso {
+  id_recurso         String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_cliente_contai  String             @db.Uuid
+  nombre_recurso     String?            @db.VarChar(100)
+  url_recurso        String
+  created_at         DateTime           @default(now()) @db.Timestamptz(6)
+  dim_cliente_contai dim_cliente_contai @relation(fields: [id_cliente_contai], references: [id_cliente_contai], onDelete: Cascade, onUpdate: NoAction)
+
+  @@schema("core")
+}
+
+model dim_area {
+  id_area                String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sp_area_id             Int?                     @unique
+  nombre_area            String                   @unique @db.VarChar(100)
+  encargado_recepcion    String?                  @db.VarChar(100)
+  created_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  dim_personal           dim_personal[]
+  dim_tipo_requerimiento dim_tipo_requerimiento[]
+  fact_ticket            fact_ticket[]
+
+  @@schema("core")
+}
+
+model dim_cliente_contai {
+  id_cliente_contai      String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sp_cliente_id          Int?                     @unique
+  identificacion_fiscal  String?                  @db.VarChar(50)
+  nombre_cliente         String                   @db.VarChar(150)
+  tipo_cliente           String?                  @db.VarChar(50)
+  grupo_economico        String?                  @db.VarChar(100)
+  estado_cliente         Boolean                  @default(true)
+  created_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime                 @default(now()) @db.Timestamptz(6)
+  cliente_contai_recurso cliente_contai_recurso[]
+  fact_ticket            fact_ticket[]
+
+  @@schema("core")
+}
+
+model dim_personal {
+  id_personal                                          String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sp_personal_id                                       Int?                 @unique
+  sp_user_id                                           Int?                 @unique
+  cedula                                               String?              @db.VarChar(20)
+  nombre_completo                                      String               @db.VarChar(200)
+  correo_corporativo                                   String?              @db.VarChar(150)
+  id_area                                              String?              @db.Uuid
+  cargo                                                String?              @db.VarChar(100)
+  estado_activo                                        Boolean              @default(true)
+  created_at                                           DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at                                           DateTime             @default(now()) @db.Timestamptz(6)
+  dim_area                                             dim_area?            @relation(fields: [id_area], references: [id_area], onDelete: NoAction, onUpdate: NoAction)
+  fact_ticket_fact_ticket_id_asignadoTodim_personal    fact_ticket[]        @relation("fact_ticket_id_asignadoTodim_personal")
+  fact_ticket_fact_ticket_id_solicitanteTodim_personal fact_ticket[]        @relation("fact_ticket_id_solicitanteTodim_personal")
+  fact_ticket_evento                                   fact_ticket_evento[]
+
+  @@schema("core")
+}
+
+model dim_estado {
+  id_estado     String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre_estado String        @unique @db.VarChar(50)
+  fact_ticket   fact_ticket[]
+
+  @@schema("helpdesk")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model dim_prioridad {
+  id_prioridad     String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre_prioridad String        @unique @db.VarChar(50)
+  dias_sla         Int
+  peso_prioridad   Int
+  fact_ticket      fact_ticket[]
+
+  @@schema("helpdesk")
+}
+
+model dim_tipo_requerimiento {
+  id_tipo_req        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sp_tipo_req_id     Int?     @unique
+  id_area            String   @db.Uuid
+  tipo_requerimiento String   @db.VarChar(150)
+  categoria_1        String?  @db.VarChar(150)
+  categoria_2        String?  @db.VarChar(150)
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime @default(now()) @db.Timestamptz(6)
+  dim_area           dim_area @relation(fields: [id_area], references: [id_area], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([id_area, tipo_requerimiento, categoria_1, categoria_2], map: "uq_dim_tipo_req_natural")
+  @@schema("helpdesk")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model fact_ticket {
+  id_ticket                                             String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consecutivo_sp                                        Int                  @unique
+  titulo_ticket                                         String               @db.VarChar(255)
+  descripcion_problema                                  String
+  id_cliente_contai                                     String?              @db.Uuid
+  id_solicitante                                        String?              @db.Uuid
+  id_area_destino                                       String?              @db.Uuid
+  id_asignado                                           String?              @db.Uuid
+  id_estado                                             String               @db.Uuid
+  id_prioridad                                          String?              @db.Uuid
+  id_tipo_req                                           String?              @db.Uuid
+  fecha_creacion                                        DateTime             @default(now()) @db.Timestamptz(6)
+  fecha_limite                                          DateTime?            @db.Timestamptz(6)
+  fecha_resolucion                                      DateTime?            @db.Timestamptz(6)
+  respuesta_final                                       String?
+  calificacion                                          Int?
+  ultima_actualizacion                                  DateTime             @default(now()) @db.Timestamptz(6)
+  dim_area                                              dim_area?            @relation(fields: [id_area_destino], references: [id_area], onDelete: NoAction, onUpdate: NoAction)
+  dim_personal_fact_ticket_id_asignadoTodim_personal    dim_personal?        @relation("fact_ticket_id_asignadoTodim_personal", fields: [id_asignado], references: [id_personal], onDelete: NoAction, onUpdate: NoAction)
+  dim_cliente_contai                                    dim_cliente_contai?  @relation(fields: [id_cliente_contai], references: [id_cliente_contai], onDelete: NoAction, onUpdate: NoAction)
+  dim_estado                                            dim_estado           @relation(fields: [id_estado], references: [id_estado], onDelete: NoAction, onUpdate: NoAction)
+  dim_prioridad                                         dim_prioridad?       @relation(fields: [id_prioridad], references: [id_prioridad], onDelete: NoAction, onUpdate: NoAction)
+  dim_personal_fact_ticket_id_solicitanteTodim_personal dim_personal?        @relation("fact_ticket_id_solicitanteTodim_personal", fields: [id_solicitante], references: [id_personal], onDelete: NoAction, onUpdate: NoAction)
+  fact_ticket_evento                                    fact_ticket_evento[]
+
+  @@schema("helpdesk")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model fact_ticket_evento {
+  id_evento      String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sp_event_id    Int?          @unique
+  event_hash     String?       @unique
+  id_ticket      String        @db.Uuid
+  id_autor       String?       @db.Uuid
+  tipo_evento    String        @db.VarChar(50)
+  contenido      String
+  fecha_registro DateTime      @default(now()) @db.Timestamptz(6)
+  dim_personal   dim_personal? @relation(fields: [id_autor], references: [id_personal], onDelete: NoAction, onUpdate: NoAction)
+  fact_ticket    fact_ticket   @relation(fields: [id_ticket], references: [id_ticket], onDelete: Cascade, onUpdate: NoAction)
+
+  @@schema("helpdesk")
+}
