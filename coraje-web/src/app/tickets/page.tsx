@@ -1,103 +1,49 @@
-import { prisma } from "@/lib/prisma";
+import { TicketsTable } from "@/features/tickets/components/TicketsTable";
+import { getRecentTickets } from "@/features/tickets/data/getTickets";
 
+/**
+ * Página principal de tickets.
+ *
+ * Server Component:
+ * - consulta datos directamente desde el servidor;
+ * - evita API routes innecesarias;
+ * - mantiene la carga inicial simple, rápida y tipada.
+ */
 export default async function TicketsPage() {
-    const tickets = await prisma.fact_ticket.findMany({
-        take: 10,
-        orderBy: {
-            fecha_creacion: "desc",
-        },
-        select: {
-            id_ticket: true,
-            consecutivo_sp: true,
-            titulo_ticket: true,
-            fecha_creacion: true,
-            dim_estado: {
-                select: {
-                    nombre_estado: true,
-                },
-            },
-            dim_prioridad: {
-                select: {
-                    nombre_prioridad: true,
-                },
-            },
-            dim_area: {
-                select: {
-                    nombre_area: true,
-                },
-            },
-            dim_cliente_contai: {
-                select: {
-                    nombre_cliente: true,
-                },
-            },
-        },
-    });
+  const tickets = await getRecentTickets(25);
 
-    return (
-        <main className="min-h-screen bg-slate-950 px-8 py-10 text-slate-100">
-            <section className="mx-auto max-w-6xl">
-                <div className="mb-8">
-                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-400">
-                        CORAJE / Helpdesk
-                    </p>
-                    <h1 className="mt-2 text-3xl font-bold tracking-tight">
-                        Tickets reales desde PostgreSQL
-                    </h1>
-                    <p className="mt-2 text-sm text-slate-400">
-                        Primera lectura server-side usando Prisma Client.
-                    </p>
-                </div>
+  return (
+    <main className="min-h-screen bg-zinc-100 px-6 py-8">
+      <section className="mx-auto max-w-7xl space-y-6">
+        <header className="space-y-2">
+          <p className="text-sm font-medium uppercase tracking-wide text-zinc-500">
+            CORAJE / Helpdesk
+          </p>
 
-                <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl">
-                    <table className="w-full border-collapse text-left text-sm">
-                        <thead className="bg-slate-800 text-xs uppercase tracking-wide text-slate-300">
-                            <tr>
-                                <th className="px-4 py-3">SP</th>
-                                <th className="px-4 py-3">Título</th>
-                                <th className="px-4 py-3">Cliente</th>
-                                <th className="px-4 py-3">Área</th>
-                                <th className="px-4 py-3">Estado</th>
-                                <th className="px-4 py-3">Prioridad</th>
-                                <th className="px-4 py-3">Creación</th>
-                            </tr>
-                        </thead>
+          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
+            <div>
+              <h1 className="text-3xl font-semibold tracking-tight text-zinc-950">
+                Tickets
+              </h1>
 
-                        <tbody>
-                            {tickets.map((ticket) => (
-                                <tr
-                                    key={ticket.id_ticket}
-                                    className="border-t border-slate-800 hover:bg-slate-800/60"
-                                >
-                                    <td className="px-4 py-3 font-mono text-slate-300">
-                                        {ticket.consecutivo_sp}
-                                    </td>
-                                    <td className="px-4 py-3 font-medium">
-                                        {ticket.titulo_ticket}
-                                    </td>
-                                    <td className="px-4 py-3 text-slate-300">
-                                        {ticket.dim_cliente_contai?.nombre_cliente ?? "Sin cliente"}
-                                    </td>
-                                    <td className="px-4 py-3 text-slate-300">
-                                        {ticket.dim_area?.nombre_area ?? "Sin área"}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <span className="rounded-full bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300">
-                                            {ticket.dim_estado.nombre_estado}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-3 text-slate-300">
-                                        {ticket.dim_prioridad?.nombre_prioridad ?? "Sin prioridad"}
-                                    </td>
-                                    <td className="px-4 py-3 text-slate-400">
-                                        {ticket.fecha_creacion.toLocaleDateString("es-CO")}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        </main>
-    );
+              <p className="mt-2 max-w-2xl text-sm text-zinc-600">
+                Vista operativa inicial de requerimientos migrados desde
+                SharePoint hacia PostgreSQL.
+              </p>
+            </div>
+
+            <div className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-600 shadow-sm">
+              Mostrando{" "}
+              <span className="font-semibold text-zinc-900">
+                {tickets.length}
+              </span>{" "}
+              tickets recientes
+            </div>
+          </div>
+        </header>
+
+        <TicketsTable tickets={tickets} />
+      </section>
+    </main>
+  );
 }

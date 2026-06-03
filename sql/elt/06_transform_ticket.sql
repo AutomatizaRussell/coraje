@@ -1,9 +1,79 @@
 -- =================================================================
--- TRANSFORMACIÓN DE LA TABLA DE TICKETS
+-- 06_transform_ticket.sql
+-- TRANSFORMACIÓN DE TICKETS LEGACY SHAREPOINT -> FACT_TICKET
 -- =================================================================
+--
+-- Objetivo:
+--   Transformar registros crudos de staging.sp_helpdesk_raw hacia:
+--
+--     1. helpdesk.fact_ticket
+--        Tabla canónica PostgreSQL-first.
+--
+--     2. helpdesk.ticket_legacy_sharepoint_ref
+--        Tabla puente temporal para preservar relación con SharePoint.
+--
+-- Principios:
+--   - fact_ticket NO depende de SharePoint.
+--   - fact_ticket NO contiene consecutivo_sp.
+--   - fact_ticket NO contiene titulo_ticket.
+--   - Id_Req legacy se conserva como legacy_id_req.
+--   - Title de SharePoint se conserva como legacy_title.
+--   - sp_id se conserva solo en ticket_legacy_sharepoint_ref.
+--   - codigo_ticket lo genera PostgreSQL mediante helpdesk.next_codigo_ticket().
+--
+-- Requisitos previos:
+--   - helpdesk.fact_ticket existe.
+--   - helpdesk.ticket_legacy_sharepoint_ref existe.
+--   - helpdesk.next_codigo_ticket() existe.
+--   - staging.sp_helpdesk_raw ya está cargada.
+--   - dimensiones core/helpdesk ya están pobladas.
+-- =================================================================
+
+
+-- =================================================================
+-- 0. MAPEO TEMPORAL SHAREPOINT -> TICKET
+-- =================================================================
+-- Este mapa temporal resuelve la identidad canónica del ticket.
+--
+-- Si el sp_id ya existe en ticket_legacy_sharepoint_ref:
+--   reutiliza el id_ticket existente.
+--
+-- Si el sp_id es nuevo:
+--   genera un id_ticket nuevo que luego se insertará en fact_ticket.
+--
+-- No es una tabla permanente.
+-- No contamina el modelo.
+-- =================================================================
+
+DROP TABLE IF EXISTS tmp_ticket_legacy_map;
+
+CREATE TEMP TABLE tmp_ticket_legacy_map AS
+SELECT
+    s.sp_id,
+    COALESCE(ref.id_ticket, gen_random_uuid()) AS id_ticket,
+    NULLIF(TRIM(s.payload->>'Id_Req'), '') AS legacy_id_req,
+    NULLIF(TRIM(s.payload->>'Title'), '') AS legacy_title,
+    CAST(s.payload->>'Created' AS TIMESTAMPTZ) AS legacy_created_at
+FROM staging.sp_helpdesk_raw s
+LEFT JOIN helpdesk.ticket_legacy_sharepoint_ref ref
+    ON ref.sp_id = s.sp_id;
+
+
+-- =================================================================
+-- 1. TRANSFORMACIÓN DE LA TABLA DE TICKETS
+-- =================================================================
+-- Inserta o actualiza tickets canónicos.
+--
+-- La idempotencia ya no depende de SharePoint ID.
+-- La idempotencia usa id_ticket resuelto en tmp_ticket_legacy_map.
+--
+-- El código visible codigo_ticket NO se inserta explícitamente:
+--   lo genera el DEFAULT helpdesk.next_codigo_ticket()
+--   cuando el ticket es nuevo.
+-- =================================================================
+
 INSERT INTO helpdesk.fact_ticket (
-    consecutivo_sp,
-    titulo_ticket,
+    id_ticket,
     descripcion_problema,
     id_cliente_contai,
     id_solicitante,
@@ -16,12 +86,12 @@ INSERT INTO helpdesk.fact_ticket (
     fecha_limite,
     fecha_resolucion,
     respuesta_final,
-    calificacion
+    calificacion,
+    origen_sistema
 )
 SELECT
-    s.sp_id AS consecutivo_sp,
+    ref.id_ticket,
 
-    COALESCE(NULLIF(TRIM(s.payload->>'Id_Req'), ''), 'SIN ID') AS titulo_ticket,
     COALESCE(NULLIF(TRIM(s.payload->>'Requerimiento'), ''), 'Sin descripción') AS descripcion_problema,
 
     c.id_cliente_contai,
@@ -47,38 +117,43 @@ SELECT
     )::TIMESTAMPTZ AS fecha_limite,
 
     CASE
-    WHEN NULLIF(TRIM(s.payload->>'Fecha_Respuesta'), '') IS NULL THEN NULL
+        WHEN NULLIF(TRIM(s.payload->>'Fecha_Respuesta'), '') IS NULL THEN NULL
 
-    -- Si la fecha de respuesta es anterior al día de creación, es inválida.
-    WHEN TO_DATE(
-            NULLIF(TRIM(s.payload->>'Fecha_Respuesta'), ''),
-            'DD/MM/YYYY'
-         ) < CAST(s.payload->>'Created' AS TIMESTAMPTZ)::DATE
-    THEN NULL
+        -- Si la fecha de respuesta es anterior al día de creación, es inválida.
+        WHEN TO_DATE(
+                NULLIF(TRIM(s.payload->>'Fecha_Respuesta'), ''),
+                'DD/MM/YYYY'
+             ) < CAST(s.payload->>'Created' AS TIMESTAMPTZ)::DATE
+        THEN NULL
 
-    -- Si la respuesta fue el mismo día de creación, usamos fecha_creacion.
-    -- Esto evita violar el constraint porque SharePoint no trae hora de respuesta.
-    WHEN TO_DATE(
-            NULLIF(TRIM(s.payload->>'Fecha_Respuesta'), ''),
-            'DD/MM/YYYY'
-         ) = CAST(s.payload->>'Created' AS TIMESTAMPTZ)::DATE
-    THEN CAST(s.payload->>'Created' AS TIMESTAMPTZ)
+        -- Si la respuesta fue el mismo día de creación, usamos fecha_creacion.
+        -- Esto evita violar el constraint porque SharePoint no trae hora de respuesta.
+        WHEN TO_DATE(
+                NULLIF(TRIM(s.payload->>'Fecha_Respuesta'), ''),
+                'DD/MM/YYYY'
+             ) = CAST(s.payload->>'Created' AS TIMESTAMPTZ)::DATE
+        THEN CAST(s.payload->>'Created' AS TIMESTAMPTZ)
 
-    -- Si fue en un día posterior, medianoche de ese día ya es válida.
-    ELSE TO_DATE(
-            NULLIF(TRIM(s.payload->>'Fecha_Respuesta'), ''),
-            'DD/MM/YYYY'
-         )::TIMESTAMPTZ
-END AS fecha_resolucion,
+        -- Si fue en un día posterior, medianoche de ese día ya es válida.
+        ELSE TO_DATE(
+                NULLIF(TRIM(s.payload->>'Fecha_Respuesta'), ''),
+                'DD/MM/YYYY'
+             )::TIMESTAMPTZ
+    END AS fecha_resolucion,
 
     NULLIF(TRIM(s.payload->>'Respuesta'), '') AS respuesta_final,
 
     CAST(
         NULLIF(TRIM(s.payload->>'Calificaci_x00f3_n'), '')
         AS INTEGER
-    ) AS calificacion
+    ) AS calificacion,
+
+    'SHAREPOINT_LEGACY' AS origen_sistema
 
 FROM staging.sp_helpdesk_raw s
+
+INNER JOIN tmp_ticket_legacy_map ref
+    ON ref.sp_id = s.sp_id
 
 LEFT JOIN core.dim_cliente_contai c
     ON c.identificacion_fiscal = TRIM(s.payload->>'Nit')
@@ -102,6 +177,7 @@ LEFT JOIN helpdesk.dim_estado est_default
 -- contra el catálogo actual de TipoReqHD.
 --
 -- Casos detectados:
+--
 -- 1. ADMINISTRACIÓN:
 --    Tickets antiguos traen:
 --      Tipo_Requerimiento = AUTOMATIZACIÓN / TI
@@ -179,9 +255,6 @@ LEFT JOIN helpdesk.dim_tipo_requerimiento tr
    AND COALESCE(core.norm_text(tr.categoria_1), '') = COALESCE(tipo_legacy.categoria_1_match, '')
    AND COALESCE(core.norm_text(tr.categoria_2), '') = COALESCE(tipo_legacy.categoria_2_match, '')
 
-
-
-
 LEFT JOIN helpdesk.dim_prioridad prio
     ON UPPER(s.payload->>'Prioridad') LIKE '%' || prio.nombre_prioridad || '%'
 
@@ -191,9 +264,8 @@ WHERE
         OR sol.id_personal IS NOT NULL
     )
 
-ON CONFLICT (consecutivo_sp)
+ON CONFLICT (id_ticket)
 DO UPDATE SET
-    titulo_ticket = EXCLUDED.titulo_ticket,
     descripcion_problema = EXCLUDED.descripcion_problema,
     id_cliente_contai = EXCLUDED.id_cliente_contai,
     id_solicitante = EXCLUDED.id_solicitante,
@@ -207,4 +279,39 @@ DO UPDATE SET
     fecha_resolucion = EXCLUDED.fecha_resolucion,
     respuesta_final = EXCLUDED.respuesta_final,
     calificacion = EXCLUDED.calificacion,
+    origen_sistema = EXCLUDED.origen_sistema,
     ultima_actualizacion = NOW();
+
+
+-- =================================================================
+-- 2. PERSISTIR REFERENCIA LEGACY SHAREPOINT
+-- =================================================================
+-- Solo se persisten referencias legacy para tickets que sí quedaron
+-- insertados o actualizados en helpdesk.fact_ticket.
+--
+-- Esto evita referencias huérfanas.
+-- =================================================================
+
+INSERT INTO helpdesk.ticket_legacy_sharepoint_ref (
+    id_ticket,
+    sp_id,
+    legacy_id_req,
+    legacy_title,
+    legacy_created_at
+)
+SELECT
+    m.id_ticket,
+    m.sp_id,
+    m.legacy_id_req,
+    m.legacy_title,
+    m.legacy_created_at
+FROM tmp_ticket_legacy_map m
+INNER JOIN helpdesk.fact_ticket f
+    ON f.id_ticket = m.id_ticket
+ON CONFLICT (sp_id)
+DO UPDATE SET
+    id_ticket = EXCLUDED.id_ticket,
+    legacy_id_req = EXCLUDED.legacy_id_req,
+    legacy_title = EXCLUDED.legacy_title,
+    legacy_created_at = EXCLUDED.legacy_created_at,
+    updated_at = NOW();

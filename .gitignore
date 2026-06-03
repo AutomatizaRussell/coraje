@@ -38,9 +38,12 @@ coraje-web/build/
 # Vercel
 coraje-web/.vercel/
 
-# TypeScript incremental cache / generated Next types
+# TypeScript incremental cache
 coraje-web/*.tsbuildinfo
-coraje-web/next-env.d.ts
+
+# Prisma generated client
+# Regenerar con: pnpm prisma generate
+coraje-web/src/generated/prisma/
 
 # Debug logs
 coraje-web/npm-debug.log*
@@ -69,15 +72,25 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Si luego formalizas Python con uv y decides fijar versión Python,
-# evalúa si .python-version debe entrar o no a Git.
-# .python-version
-
 # ============================================================
-# n8n / archivos sensibles
+# n8n / archivos sensibles y runtime local
 # ============================================================
 n8n/credentials/
 n8n/*.credentials.json
+n8n/data/
+n8n/.n8n/
+n8n/database.sqlite
+n8n/database.sqlite-*
+
+# ============================================================
+# Backups / dumps de base de datos
+# ============================================================
+dumps/
+backups/
+*.dump
+*.backup
+*.sql.bak
+*.sql.tmp
 
 # ============================================================
 # Sistema operativo / editores
