@@ -32,8 +32,10 @@ CREATE TABLE helpdesk.dim_tipo_requerimiento (
     id_area UUID NOT NULL REFERENCES core.dim_area(id_area),
 
     tipo_requerimiento VARCHAR(150) NOT NULL,
-    categoria VARCHAR(150),
-    subcategoria VARCHAR(150),
+        
+    categoria_1 VARCHAR(150),
+    categoria_2 VARCHAR(150),
+
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -42,7 +44,7 @@ CREATE TABLE helpdesk.dim_tipo_requerimiento (
     UNIQUE (
         id_area,
         tipo_requerimiento,
-        categoria,
-        subcategoria
+        categoria_1,
+        categoria_2
     )
 );

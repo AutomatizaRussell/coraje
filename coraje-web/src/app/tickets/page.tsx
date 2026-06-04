@@ -2,12 +2,21 @@ import { TicketsTable } from "@/features/tickets/components/TicketsTable";
 import { getRecentTickets } from "@/features/tickets/data/getTickets";
 
 /**
+ * Fuerza renderizado dinámico.
+ *
+ * Esta pantalla depende de PostgreSQL en runtime. No debe intentar
+ * prerenderizarse durante `next build`, porque el build no debería depender
+ * de una conexión activa a base de datos.
+ */
+export const dynamic = "force-dynamic";
+
+/**
  * Página principal de tickets.
  *
  * Server Component:
- * - consulta datos directamente desde el servidor;
- * - evita API routes innecesarias;
- * - mantiene la carga inicial simple, rápida y tipada.
+ * - ejecuta la consulta en el servidor;
+ * - mantiene el cliente liviano;
+ * - evita crear API routes innecesarias en esta fase inicial.
  */
 export default async function TicketsPage() {
   const tickets = await getRecentTickets(25);

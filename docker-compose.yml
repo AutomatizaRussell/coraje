@@ -1,37 +1,58 @@
 services:
-  db:
-    image: postgres:16-alpine
-    container_name: helpdesk_db
+  postgres:
+    image: postgres:18-alpine
+    container_name: coraje_postgres
+    restart: unless-stopped
+
     environment:
-      # Llama dinámicamente a los secretos del .env
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASS}
-      - POSTGRES_DB=${DB_NAME}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      TZ: America/Bogota
+
     ports:
-      # Puerto 5433 para tu PC (DBeaver), Puerto 5432 para la red interna de Docker
-      - "5433:5432"
+      # Expuesto solo en localhost de la VPS.
+      # Para DBeaver, conecta mediante túnel SSH al puerto 5433.
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+
     volumes:
-      - adm_helpdesk_data:/var/lib/postgresql/data
-    restart: always
+      - coraje_postgres_data:/var/lib/postgresql
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   n8n:
-    image: n8nio/n8n:2.20.7 
-    container_name: n8n_coraje
+    # Temporalmente podrías usar latest solo para detectar versión.
+    # En Git debe quedar fijado, por ejemplo: n8nio/n8n:2.23.3
+    image: n8nio/n8n:2.23.3
+    container_name: coraje_n8n
+    restart: unless-stopped
+
     ports:
-      - "5678:5678"
+      - "5679:5678"
+
     environment:
-      - N8N_HOST=localhost
-      - WEBHOOK_URL=http://localhost:5678/
-      # CRÍTICO: Sincronización de reloj para evitar desfases de SLA en los tickets
-      - GENERIC_TIMEZONE=America/Bogota
-      - TZ=America/Bogota
+      GENERIC_TIMEZONE: America/Bogota
+      TZ: America/Bogota
+
+      # Cambiar cuando tengas dominio/proxy.
+      N8N_HOST: ${N8N_HOST}
+      N8N_PROTOCOL: ${N8N_PROTOCOL}
+      WEBHOOK_URL: ${WEBHOOK_URL}
+
+      # Recomendado por configuración Docker moderna de n8n.
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      N8N_RUNNERS_ENABLED: "true"
+
+      # Clave crítica: si cambia, puedes perder acceso a credenciales cifradas.
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+
     volumes:
-      - n8n_data:/home/node/.n8n
-    depends_on:
-      - db
-    restart: always
+      - coraje_n8n_data:/home/node/.n8n
 
 volumes:
-  adm_helpdesk_data:
-    external: true  
-  n8n_data:
+  coraje_postgres_data:
+  coraje_n8n_data:

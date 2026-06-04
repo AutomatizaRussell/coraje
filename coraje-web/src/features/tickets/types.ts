@@ -1,17 +1,53 @@
 /**
- * Tipo de fila que necesita la tabla de tickets.
+ * Representa una fila operativa del listado de tickets.
  *
- * No exponemos directamente el modelo Prisma completo porque eso acopla
- * la UI a la estructura física de base de datos. Esta capa actúa como
- * contrato estable entre datos y presentación.
+ * Este tipo NO replica el modelo físico completo de Prisma. Es un DTO
+ * específico para la pantalla de listado. Eso evita acoplar la tabla visual
+ * a todos los detalles internos de PostgreSQL y permite evolucionar la UI
+ * sin arrastrar toda la estructura de base de datos.
  */
 export type TicketListItem = {
+  /**
+   * Identificador técnico interno del ticket.
+   * Se usa como key estable en React y para futura navegación a /tickets/[id].
+   */
   idTicket: string;
-  consecutivoSp: number;
-  titulo: string;
+
+  /**
+   * Código visible generado por PostgreSQL.
+   * Reemplaza el uso legacy de consecutivo_sp / Id_Req.
+   */
+  codigoTicket: string;
+
+  /**
+   * Descripción principal del requerimiento.
+   * En el modelo canónico reemplaza el antiguo titulo_ticket.
+   */
+  descripcion: string;
+
   cliente: string;
   area: string;
   estado: string;
   prioridad: string;
+
+  /**
+   * Tipo funcional del requerimiento, si el mapeo legacy logró resolverlo.
+   */
+  tipoRequerimiento: string;
+
+  /**
+   * Categorías normalizadas desde TipoReqHD / HelpDeskBd.
+   */
+  categoria1: string;
+  categoria2: string;
+
   fechaCreacion: Date;
+  fechaLimite: Date | null;
+  fechaResolucion: Date | null;
+
+  /**
+   * Origen funcional del ticket.
+   * Ejemplo: SHAREPOINT_LEGACY, PORTAL_CLIENTE, SISTEMA_INTERNO.
+   */
+  origenSistema: string;
 };
