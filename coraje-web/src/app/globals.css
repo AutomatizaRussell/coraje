@@ -1,8 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f4f4f5;
-  --foreground: #18181b;
+  --rb-dark-blue: #001871;
+  --rb-light-blue: #00a9ce;
+  --rb-orange: #ed8b00;
+  --rb-turquoise: #00bfb3;
+
+  --background: #f4f7fa;
+  --foreground: #2d3748;
+  --muted: #718096;
+  --border-light: #e2e8f0;
+
+  --card-shadow: 0 10px 15px -3px rgba(0, 24, 113, 0.05),
+    0 4px 6px -2px rgba(0, 24, 113, 0.03);
+
+  --card-shadow-hover: 0 20px 25px -5px rgba(0, 169, 206, 0.15),
+    0 10px 10px -5px rgba(0, 24, 113, 0.05);
 }
 
 @theme inline {
@@ -12,14 +25,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/**
- * Base visual global.
- *
- * No forzamos Arial porque el layout ya expone Geist mediante variables CSS.
- * Tailwind puede consumir `font-sans` y `font-mono` desde el theme inline.
- */
 body {
   min-height: 100vh;
-  background: var(--background);
+  background: radial-gradient(circle at top left, #ffffff, #f4f7fa 100%);
   color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
 }

@@ -31,80 +31,96 @@ function formatDate(date: Date | null): string {
  * - no ejecuta consultas;
  * - no decide reglas de negocio;
  * - solo renderiza el DTO recibido desde la capa data.
+ *
+ * La estructura visual toma como referencia el prototipo HTML legacy,
+ * pero sin copiar su lógica espagueti: aquí solo hay render declarativo
+ * y datos ya preparados por la capa `getTickets`.
  */
 export function TicketsTable({ tickets }: TicketsTableProps) {
   if (tickets.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-zinc-300 bg-white p-8 text-center text-sm text-zinc-600">
+      <div className="rounded-[20px] border border-dashed border-[#e2e8f0] bg-white p-10 text-center text-sm font-semibold text-[#718096] shadow-[var(--card-shadow)]">
         No hay tickets disponibles para mostrar.
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
-      <div className="overflow-x-auto">
+    <div className="overflow-hidden rounded-[20px] border border-[#e2e8f0] bg-white shadow-[var(--card-shadow)]">
+      <div className="max-h-[650px] overflow-auto">
         <table className="min-w-full border-collapse text-sm">
-          <thead className="bg-zinc-50 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          <thead className="sticky top-0 z-10 bg-[#00a9ce] text-left text-xs font-bold uppercase tracking-wide text-white">
             <tr>
-              <th className="px-4 py-3">Código</th>
-              <th className="px-4 py-3">Descripción</th>
-              <th className="px-4 py-3">Cliente</th>
-              <th className="px-4 py-3">Área</th>
-              <th className="px-4 py-3">Tipo</th>
-              <th className="px-4 py-3">Estado</th>
-              <th className="px-4 py-3">Prioridad</th>
-              <th className="px-4 py-3">Creación</th>
-              <th className="px-4 py-3">Límite</th>
-              <th className="px-4 py-3">Origen</th>
+              <th className="whitespace-nowrap px-5 py-4">Código</th>
+              <th className="whitespace-nowrap px-5 py-4">Descripción</th>
+              <th className="whitespace-nowrap px-5 py-4">Cliente</th>
+              <th className="whitespace-nowrap px-5 py-4">Área</th>
+              <th className="whitespace-nowrap px-5 py-4">Tipo</th>
+              <th className="whitespace-nowrap px-5 py-4">Estado</th>
+              <th className="whitespace-nowrap px-5 py-4">Prioridad</th>
+              <th className="whitespace-nowrap px-5 py-4">Creación</th>
+              <th className="whitespace-nowrap px-5 py-4">Límite</th>
+              <th className="whitespace-nowrap px-5 py-4">Origen</th>
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-zinc-100">
+          <tbody className="divide-y divide-[#e2e8f0]">
             {tickets.map((ticket) => (
               <tr
                 key={ticket.idTicket}
-                className="text-zinc-700 hover:bg-zinc-50"
+                className="border-l-4 border-transparent text-zinc-700 transition hover:scale-[1.002] hover:border-[#00a9ce] hover:bg-[#f0f9ff]"
               >
-                <td className="whitespace-nowrap px-4 py-3 font-mono text-xs font-medium text-zinc-700">
+                <td className="whitespace-nowrap px-5 py-4 font-mono text-xs font-bold text-[#001871]">
                   {ticket.codigoTicket}
                 </td>
 
-                <td className="max-w-xl px-4 py-3 font-medium text-zinc-900">
+                <td className="max-w-xl px-5 py-4 font-semibold text-zinc-900">
                   <span className="line-clamp-2">{ticket.descripcion}</span>
                 </td>
 
-                <td className="px-4 py-3">{ticket.cliente}</td>
-                <td className="px-4 py-3">{ticket.area}</td>
+                <td className="px-5 py-4 font-semibold text-[#001871]">
+                  {ticket.cliente}
+                </td>
 
-                <td className="px-4 py-3">
+                <td className="px-5 py-4">
+                  <span className="inline-flex rounded-full border border-[#e2e8f0] bg-[#edf2f7] px-3 py-1 text-xs font-bold text-[#4a5568]">
+                    {ticket.area}
+                  </span>
+                </td>
+
+                <td className="px-5 py-4">
                   <div className="max-w-xs">
-                    <p className="font-medium text-zinc-800">
+                    <p className="font-bold text-zinc-800">
                       {ticket.tipoRequerimiento}
                     </p>
-                    <p className="text-xs text-zinc-500">
+
+                    <p className="mt-1 text-xs font-medium text-[#718096]">
                       {ticket.categoria1} / {ticket.categoria2}
                     </p>
                   </div>
                 </td>
 
-                <td className="px-4 py-3">
-                  <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700">
+                <td className="px-5 py-4">
+                  <span className="inline-flex rounded-full border border-[#e2e8f0] bg-[#edf2f7] px-3 py-1 text-xs font-bold text-[#4a5568]">
                     {ticket.estado}
                   </span>
                 </td>
 
-                <td className="px-4 py-3">{ticket.prioridad}</td>
+                <td className="px-5 py-4">
+                  <span className="inline-flex rounded-full border border-[rgba(237,139,0,0.2)] bg-[rgba(237,139,0,0.12)] px-3 py-1 text-xs font-bold text-[#b36900]">
+                    {ticket.prioridad}
+                  </span>
+                </td>
 
-                <td className="whitespace-nowrap px-4 py-3 text-zinc-500">
+                <td className="whitespace-nowrap px-5 py-4 font-medium text-[#718096]">
                   {formatDate(ticket.fechaCreacion)}
                 </td>
 
-                <td className="whitespace-nowrap px-4 py-3 text-zinc-500">
+                <td className="whitespace-nowrap px-5 py-4 font-medium text-[#718096]">
                   {formatDate(ticket.fechaLimite)}
                 </td>
 
-                <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-zinc-500">
+                <td className="whitespace-nowrap px-5 py-4 font-mono text-xs font-semibold text-[#718096]">
                   {ticket.origenSistema}
                 </td>
               </tr>

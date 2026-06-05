@@ -1,6 +1,7 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
@@ -89,49 +90,55 @@ model dim_prioridad {
 }
 
 model dim_tipo_requerimiento {
-  id_tipo_req        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sp_tipo_req_id     Int?          @unique
-  id_area            String        @db.Uuid
-  tipo_requerimiento String        @db.VarChar(150)
-  categoria_1        String?       @db.VarChar(150)
-  categoria_2        String?       @db.VarChar(150)
-  created_at         DateTime      @default(now()) @db.Timestamptz(6)
-  updated_at         DateTime      @default(now()) @db.Timestamptz(6)
-  dim_area           dim_area      @relation(fields: [id_area], references: [id_area], onDelete: NoAction, onUpdate: NoAction)
-  fact_ticket        fact_ticket[]
+  id_tipo_req                                                                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sp_tipo_req_id                                                              Int?          @unique
+  id_area                                                                     String        @db.Uuid
+  tipo_requerimiento                                                          String        @db.VarChar(150)
+  categoria_1                                                                 String?       @db.VarChar(150)
+  categoria_2                                                                 String?       @db.VarChar(150)
+  created_at                                                                  DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at                                                                  DateTime      @default(now()) @db.Timestamptz(6)
+  dim_area                                                                    dim_area      @relation(fields: [id_area], references: [id_area], onDelete: NoAction, onUpdate: NoAction)
+  fact_ticket                                                                 fact_ticket[]
+  fact_ticket_fact_ticket_id_tipo_req_id_area_destinoTodim_tipo_requerimiento fact_ticket[] @relation("fact_ticket_id_tipo_req_id_area_destinoTodim_tipo_requerimiento")
+  routing_rule                                                                routing_rule?
 
   @@unique([id_area, tipo_requerimiento, categoria_1, categoria_2], map: "uq_dim_tipo_req_natural")
+  @@unique([id_tipo_req, id_area], map: "uq_dim_tipo_requerimiento_id_tipo_req_id_area")
   @@schema("helpdesk")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model fact_ticket {
-  id_ticket                                             String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  codigo_ticket                                         String                        @unique @default(dbgenerated("helpdesk.next_codigo_ticket()"))
-  descripcion_problema                                  String
-  id_cliente_contai                                     String?                       @db.Uuid
-  id_solicitante                                        String?                       @db.Uuid
-  id_area_destino                                       String?                       @db.Uuid
-  id_asignado                                           String?                       @db.Uuid
-  id_estado                                             String                        @db.Uuid
-  id_prioridad                                          String?                       @db.Uuid
-  id_tipo_req                                           String?                       @db.Uuid
-  fecha_creacion                                        DateTime                      @default(now()) @db.Timestamptz(6)
-  fecha_limite                                          DateTime?                     @db.Timestamptz(6)
-  fecha_resolucion                                      DateTime?                     @db.Timestamptz(6)
-  respuesta_final                                       String?
-  calificacion                                          Int?
-  origen_sistema                                        String
-  ultima_actualizacion                                  DateTime                      @default(now()) @db.Timestamptz(6)
-  dim_area                                              dim_area?                     @relation(fields: [id_area_destino], references: [id_area], onDelete: NoAction, onUpdate: NoAction)
-  dim_personal_fact_ticket_id_asignadoTodim_personal    dim_personal?                 @relation("fact_ticket_id_asignadoTodim_personal", fields: [id_asignado], references: [id_personal], onDelete: NoAction, onUpdate: NoAction)
-  dim_cliente_contai                                    dim_cliente_contai?           @relation(fields: [id_cliente_contai], references: [id_cliente_contai], onDelete: NoAction, onUpdate: NoAction)
-  dim_estado                                            dim_estado                    @relation(fields: [id_estado], references: [id_estado], onDelete: NoAction, onUpdate: NoAction)
-  dim_prioridad                                         dim_prioridad?                @relation(fields: [id_prioridad], references: [id_prioridad], onDelete: NoAction, onUpdate: NoAction)
-  dim_personal_fact_ticket_id_solicitanteTodim_personal dim_personal?                 @relation("fact_ticket_id_solicitanteTodim_personal", fields: [id_solicitante], references: [id_personal], onDelete: NoAction, onUpdate: NoAction)
-  dim_tipo_requerimiento                                dim_tipo_requerimiento?       @relation(fields: [id_tipo_req], references: [id_tipo_req], onDelete: NoAction, onUpdate: NoAction)
-  fact_ticket_evento                                    fact_ticket_evento[]
-  ticket_legacy_sharepoint_ref                          ticket_legacy_sharepoint_ref?
+  id_ticket                                                                              String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo_ticket                                                                          String                        @unique @default(dbgenerated("helpdesk.next_codigo_ticket()"))
+  descripcion_problema                                                                   String
+  id_cliente_contai                                                                      String?                       @db.Uuid
+  id_solicitante                                                                         String?                       @db.Uuid
+  id_area_destino                                                                        String?                       @db.Uuid
+  id_asignado                                                                            String?                       @db.Uuid
+  id_estado                                                                              String                        @db.Uuid
+  id_prioridad                                                                           String?                       @db.Uuid
+  id_tipo_req                                                                            String?                       @db.Uuid
+  fecha_creacion                                                                         DateTime                      @default(now()) @db.Timestamptz(6)
+  fecha_limite                                                                           DateTime?                     @db.Timestamptz(6)
+  fecha_resolucion                                                                       DateTime?                     @db.Timestamptz(6)
+  respuesta_final                                                                        String?
+  calificacion                                                                           Int?
+  origen_sistema                                                                         String
+  ultima_actualizacion                                                                   DateTime                      @default(now()) @db.Timestamptz(6)
+  encargado_interno                                                                      String?
+  dim_area                                                                               dim_area?                     @relation(fields: [id_area_destino], references: [id_area], onDelete: NoAction, onUpdate: NoAction)
+  dim_personal_fact_ticket_id_asignadoTodim_personal                                     dim_personal?                 @relation("fact_ticket_id_asignadoTodim_personal", fields: [id_asignado], references: [id_personal], onDelete: NoAction, onUpdate: NoAction)
+  dim_cliente_contai                                                                     dim_cliente_contai?           @relation(fields: [id_cliente_contai], references: [id_cliente_contai], onDelete: NoAction, onUpdate: NoAction)
+  dim_estado                                                                             dim_estado                    @relation(fields: [id_estado], references: [id_estado], onDelete: NoAction, onUpdate: NoAction)
+  dim_prioridad                                                                          dim_prioridad?                @relation(fields: [id_prioridad], references: [id_prioridad], onDelete: NoAction, onUpdate: NoAction)
+  dim_personal_fact_ticket_id_solicitanteTodim_personal                                  dim_personal?                 @relation("fact_ticket_id_solicitanteTodim_personal", fields: [id_solicitante], references: [id_personal], onDelete: NoAction, onUpdate: NoAction)
+  dim_tipo_requerimiento                                                                 dim_tipo_requerimiento?       @relation(fields: [id_tipo_req], references: [id_tipo_req], onDelete: NoAction, onUpdate: NoAction)
+  dim_tipo_requerimiento_fact_ticket_id_tipo_req_id_area_destinoTodim_tipo_requerimiento dim_tipo_requerimiento?       @relation("fact_ticket_id_tipo_req_id_area_destinoTodim_tipo_requerimiento", fields: [id_tipo_req, id_area_destino], references: [id_tipo_req, id_area], onDelete: NoAction, onUpdate: NoAction, map: "fk_fact_ticket_tipo_req_area")
+  fact_ticket_evento                                                                     fact_ticket_evento[]
+  ticket_legacy_sharepoint_ref                                                           ticket_legacy_sharepoint_ref?
+  ticket_sync_outbox                                                                     ticket_sync_outbox[]
 
   @@schema("helpdesk")
 }
@@ -162,5 +169,49 @@ model ticket_legacy_sharepoint_ref {
   updated_at        DateTime    @default(now()) @db.Timestamptz(6)
   fact_ticket       fact_ticket @relation(fields: [id_ticket], references: [id_ticket], onDelete: Cascade, onUpdate: NoAction, map: "fk_ticket_legacy_sharepoint_ref_ticket")
 
+  @@schema("helpdesk")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model ticket_sync_outbox {
+  id_sync       String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_ticket     String      @db.Uuid
+  target_system String      @default("SHAREPOINT")
+  operation     String
+  status        String      @default("PENDING")
+  payload       Json        @default("{}")
+  attempts      Int         @default(0)
+  last_error    String?
+  created_at    DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime    @default(now()) @db.Timestamptz(6)
+  processed_at  DateTime?   @db.Timestamptz(6)
+  fact_ticket   fact_ticket @relation(fields: [id_ticket], references: [id_ticket], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([id_ticket, operation], map: "uq_ticket_sync_outbox_pending_operation", where: raw("(status = ANY (ARRAY['PENDING'::text, 'PROCESSING'::text]))"))
+  @@index([status, created_at], map: "ix_ticket_sync_outbox_status_created")
+  @@index([id_ticket], map: "ix_ticket_sync_outbox_ticket")
+  @@schema("helpdesk")
+}
+
+model area_exclusion {
+  nombre_area_normalizado String   @id
+  motivo                  String
+  created_at              DateTime @default(now()) @db.Timestamptz(6)
+
+  @@schema("core")
+}
+
+model routing_rule {
+  id_routing_rule        String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_tipo_req            String                 @unique(map: "uq_routing_rule_tipo_req") @db.Uuid
+  encargado_interno      String
+  descripcion            String?
+  activo                 Boolean                @default(true)
+  created_at             DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime               @default(now()) @db.Timestamptz(6)
+  dim_tipo_requerimiento dim_tipo_requerimiento @relation(fields: [id_tipo_req], references: [id_tipo_req], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([activo], map: "ix_routing_rule_activo")
+  @@index([id_tipo_req], map: "ix_routing_rule_tipo_req")
   @@schema("helpdesk")
 }
