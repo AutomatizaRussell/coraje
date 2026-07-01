@@ -5,6 +5,8 @@ import { isRedireccionAuthenticated } from "@/features/redireccion/data/redirecc
 
 import { loginRedireccionAction } from "./actions";
 
+export const dynamic = "force-dynamic";
+
 type RedireccionLoginPageProps = {
   searchParams?: Promise<{
     error?: string;

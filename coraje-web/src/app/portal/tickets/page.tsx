@@ -8,6 +8,8 @@ import { getPortalTickets } from "@/features/portal/data/getPortalTickets";
 import { getSelectedClient } from "@/features/portal/data/getSelectedClient";
 import { deletePortalTicketAction } from "./actions";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Vista de tickets del cliente seleccionado.
  *

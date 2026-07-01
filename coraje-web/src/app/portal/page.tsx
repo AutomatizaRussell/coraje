@@ -2,6 +2,8 @@ import { AppShell } from "@/components/app/AppShell";
 import { ClientSelector } from "@/features/portal/components/ClientSelector";
 import { getClients } from "@/features/portal/data/getClients";
 
+export const dynamic = "force-dynamic";
+
 type PortalPageProps = {
   searchParams?: Promise<{
     search?: string;

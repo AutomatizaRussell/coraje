@@ -11,9 +11,7 @@ services:
       TZ: America/Bogota
 
     ports:
-      # Expuesto solo en localhost de la VPS.
-      # Para DBeaver, conecta mediante túnel SSH al puerto 5433.
-      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5434}:5432"
 
     volumes:
       - coraje_postgres_data:/var/lib/postgresql
@@ -24,38 +22,12 @@ services:
       timeout: 5s
       retries: 5
 
-  n8n:
-    image: n8nio/n8n:2.23.3
-    container_name: coraje_n8n
-    restart: unless-stopped
-
-    ports:
-      - "5679:5678"
-
-    environment:
-      GENERIC_TIMEZONE: America/Bogota
-      TZ: America/Bogota
-
-      N8N_HOST: ${N8N_HOST}
-      N8N_PROTOCOL: ${N8N_PROTOCOL}
-      WEBHOOK_URL: ${WEBHOOK_URL}
-
-      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
-      N8N_RUNNERS_ENABLED: "true"
-      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
-
-      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
-
-      CORAJE_REMOTE_N8N_WEBHOOK_URL: ${CORAJE_REMOTE_N8N_WEBHOOK_URL}
-      CORAJE_REMOTE_N8N_SECRET: ${CORAJE_REMOTE_N8N_SECRET}
-
-    volumes:
-      - coraje_n8n_data:/home/node/.n8n
-
-    depends_on:
-      postgres:
-        condition: service_healthy
+    networks:
+      - coraje_net
 
 volumes:
   coraje_postgres_data:
-  coraje_n8n_data:
+
+networks:
+  coraje_net:
+    external: true

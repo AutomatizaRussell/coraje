@@ -9,6 +9,8 @@ import { requireRedireccionAuth } from "@/features/redireccion/data/redireccionA
 
 import { redirectTicketAction } from "./actions";
 
+export const dynamic = "force-dynamic";
+
 type RedirectTicketPageProps = {
   params: Promise<{
     id: string;

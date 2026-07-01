@@ -6,6 +6,8 @@ import { getSelectedClient } from "@/features/portal/data/getSelectedClient";
 import { getPortalTicketDatePreview } from "@/features/portal/data/getPortalTicketDatePreview";
 import { createPortalTicketAction } from "./actions";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Página de creación de ticket para cliente.
  *

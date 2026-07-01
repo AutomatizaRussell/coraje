@@ -5,6 +5,8 @@ import { PendingRedirectTicketsTable } from "@/features/redireccion/components/P
 import { getPendingRedirectTickets } from "@/features/redireccion/data/getPendingRedirectTickets";
 import { requireRedireccionAuth } from "@/features/redireccion/data/redireccionAuth";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Vista interna de tickets pendientes de redirección.
  *

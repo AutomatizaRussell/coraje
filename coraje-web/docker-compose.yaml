@@ -1,0 +1,28 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    restart: unless-stopped
+
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      NEXT_TELEMETRY_DISABLED: "1"
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+
+    expose:
+      - "3000"
+
+    networks:
+      - coolify
+      - coraje_net
+
+networks:
+  coolify:
+    external: true
+
+  coraje_net:
+    external: true
