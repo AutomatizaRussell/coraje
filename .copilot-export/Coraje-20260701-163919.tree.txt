@@ -1,0 +1,155 @@
+.
+├── backups
+│   └── n8n_coraje
+│       └── coraje_n8n_workflows_separate_
+│           ├── 367pSij9JBbuVGMZ.json
+│           ├── 7sImTufyPIbv5J1E.json
+│           ├── 9MjSGqTJbMH8eEKI.json
+│           ├── pvpP4OeX2H0wlUuj.json
+│           ├── qb8WyXux7mYm9yeY.json
+│           ├── qnrg1r5Ex0FrExdH.json
+│           ├── Tjm2tDCE8YqKHFoL.json
+│           └── XKjSggnh1zwHD8WU.json
+├── coraje-web
+│   ├── prisma
+│   │   └── schema.prisma
+│   ├── public
+│   │   ├── file.svg
+│   │   ├── globe.svg
+│   │   ├── next.svg
+│   │   ├── rb-logo.png
+│   │   ├── vercel.svg
+│   │   └── window.svg
+│   ├── src
+│   │   ├── app
+│   │   │   ├── api
+│   │   │   │   └── portal
+│   │   │   │       └── clientes
+│   │   │   │           └── route.ts
+│   │   │   ├── portal
+│   │   │   │   ├── tickets
+│   │   │   │   │   ├── nuevo
+│   │   │   │   │   │   ├── actions.ts
+│   │   │   │   │   │   └── page.tsx
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── actions.ts
+│   │   │   │   └── page.tsx
+│   │   │   ├── redireccion
+│   │   │   │   ├── [id]
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── login
+│   │   │   │   │   ├── actions.ts
+│   │   │   │   │   └── page.tsx
+│   │   │   │   └── page.tsx
+│   │   │   ├── favicon.ico
+│   │   │   ├── globals.css
+│   │   │   ├── layout.tsx
+│   │   │   └── page.tsx
+│   │   ├── components
+│   │   │   └── app
+│   │   │       └── AppShell.tsx
+│   │   ├── features
+│   │   │   ├── portal
+│   │   │   │   ├── components
+│   │   │   │   │   ├── ClientSelector.tsx
+│   │   │   │   │   └── PortalTicketsTable.tsx
+│   │   │   │   ├── data
+│   │   │   │   │   ├── getClients.ts
+│   │   │   │   │   ├── getPortalTicketDatePreview.ts
+│   │   │   │   │   ├── getPortalTickets.ts
+│   │   │   │   │   └── getSelectedClient.ts
+│   │   │   │   └── actions.ts
+│   │   │   ├── redireccion
+│   │   │   │   ├── components
+│   │   │   │   │   ├── PendingRedirectTicketsTable.tsx
+│   │   │   │   │   └── RedirectTicketForm.tsx
+│   │   │   │   └── data
+│   │   │   │       ├── getPendingRedirectTickets.ts
+│   │   │   │       ├── getRedirectCatalog.ts
+│   │   │   │       ├── getRedirectTicket.ts
+│   │   │   │       └── redireccionAuth.ts
+│   │   │   └── tickets
+│   │   │       ├── components
+│   │   │       │   ├── TicketKpiCards.tsx
+│   │   │       │   └── TicketsTable.tsx
+│   │   │       ├── data
+│   │   │       │   └── getTickets.ts
+│   │   │       └── types.ts
+│   │   ├── generated
+│   │   │   └── prisma
+│   │   │       ├── internal
+│   │   │       │   ├── class.ts
+│   │   │       │   ├── prismaNamespace.ts
+│   │   │       │   └── prismaNamespaceBrowser.ts
+│   │   │       ├── models
+│   │   │       │   ├── area_exclusion.ts
+│   │   │       │   ├── cliente_contai_recurso.ts
+│   │   │       │   ├── dim_area.ts
+│   │   │       │   ├── dim_cliente_contai.ts
+│   │   │       │   ├── dim_estado.ts
+│   │   │       │   ├── dim_personal.ts
+│   │   │       │   ├── dim_prioridad.ts
+│   │   │       │   ├── dim_tipo_requerimiento.ts
+│   │   │       │   ├── fact_ticket.ts
+│   │   │       │   ├── fact_ticket_evento.ts
+│   │   │       │   ├── routing_rule.ts
+│   │   │       │   ├── ticket_legacy_sharepoint_ref.ts
+│   │   │       │   └── ticket_sync_outbox.ts
+│   │   │       ├── browser.ts
+│   │   │       ├── client.ts
+│   │   │       ├── commonInputTypes.ts
+│   │   │       ├── enums.ts
+│   │   │       └── models.ts
+│   │   └── lib
+│   │       └── prisma.ts
+│   ├── .env.example
+│   ├── .node-version
+│   ├── eslint.config.mjs
+│   ├── next-env.d.ts
+│   ├── next.config.ts
+│   ├── package.json
+│   ├── pnpm-lock.yaml
+│   ├── pnpm-workspace.yaml
+│   ├── postcss.config.mjs
+│   ├── prisma.config.ts
+│   ├── README.md
+│   └── tsconfig.json
+├── docs
+│   ├── arquitectura_actual.md
+│   ├── baseline_calidad.md
+│   ├── decisiones_tecnicas.md
+│   ├── estrategia_transicion.md
+│   ├── estructura.md
+│   ├── hallazgos_migracion.md
+│   ├── recapitulacion_tecnica_coraje_sprint_inicial.md
+│   └── reglas_legacy.md
+├── sql
+│   ├── checks
+│   │   └── 08_dev_checks.sql
+│   ├── db
+│   │   ├── 00_extensions.sql
+│   │   ├── 01_schemas.sql
+│   │   ├── 02_functions.sql
+│   │   ├── 03_staging.sql
+│   │   ├── 04_core.sql
+│   │   ├── 05_helpdesk_dimensions.sql
+│   │   ├── 06_helpdesk_facts.sql
+│   │   ├── 07_seed.sql
+│   │   └── 08_helpdesk_sync.sql
+│   ├── elt
+│   │   ├── 01_transform_area.sql
+│   │   ├── 02_transform_clientes.sql
+│   │   ├── 03_transform_personal.sql
+│   │   ├── 04_transform_personal_historico.sql
+│   │   ├── 05_transform_tipo_requerimiento.sql
+│   │   ├── 06_transform_ticket.sql
+│   │   └── 07_transform_ticket_evento.sql
+│   └── ingest
+│       ├── 00_upsert_staging_template.sql.sql
+│       └── README.md
+├── .env.example
+├── .gitignore
+├── create-copilot-export.sh
+└── docker-compose.yml

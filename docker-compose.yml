@@ -25,8 +25,6 @@ services:
       retries: 5
 
   n8n:
-    # Temporalmente podrías usar latest solo para detectar versión.
-    # En Git debe quedar fijado, por ejemplo: n8nio/n8n:2.23.3
     image: n8nio/n8n:2.23.3
     container_name: coraje_n8n
     restart: unless-stopped
@@ -38,20 +36,25 @@ services:
       GENERIC_TIMEZONE: America/Bogota
       TZ: America/Bogota
 
-      # Cambiar cuando tengas dominio/proxy.
       N8N_HOST: ${N8N_HOST}
       N8N_PROTOCOL: ${N8N_PROTOCOL}
       WEBHOOK_URL: ${WEBHOOK_URL}
 
-      # Recomendado por configuración Docker moderna de n8n.
       N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
       N8N_RUNNERS_ENABLED: "true"
-
-      # Clave crítica: si cambia, puedes perder acceso a credenciales cifradas.
       N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+
+      CORAJE_REMOTE_N8N_WEBHOOK_URL: ${CORAJE_REMOTE_N8N_WEBHOOK_URL}
+      CORAJE_REMOTE_N8N_SECRET: ${CORAJE_REMOTE_N8N_SECRET}
 
     volumes:
       - coraje_n8n_data:/home/node/.n8n
+
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   coraje_postgres_data:

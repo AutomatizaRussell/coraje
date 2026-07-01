@@ -1,0 +1,97 @@
+==============================================================================
+REPORTE DE EXPORTACION SANEADA
+==============================================================================
+Proyecto: /home/Coraje
+Nombre:   Coraje
+Fecha:    20260701-163919
+
+Archivos escaneados:             30268
+Archivos excluidos por regla:     30154
+Archivos excluidos por tamano:    0
+Archivos incluidos en manifest:   114
+Limite por archivo:               25 MB
+
+==============================================================================
+1) RUTAS SOSPECHOSAS INCLUIDAS
+==============================================================================
+Si aparece algo sensible real aqui, NO subas el ZIP.
+
+1:.env.example
+11:coraje-web/.env.example
+
+==============================================================================
+2) PLANTILLAS DE ENTORNO INCLUIDAS
+==============================================================================
+Estas pueden ser utiles, pero deben revisarse manualmente.
+
+1:.env.example
+11:coraje-web/.env.example
+
+==============================================================================
+3) SQL INCLUIDO
+==============================================================================
+Los SQL se incluyen porque en tu flujo son codigo/consultas/migraciones.
+Pero revisa que no sean dumps con datos reales.
+
+96:sql/checks/08_dev_checks.sql
+97:sql/db/00_extensions.sql
+98:sql/db/01_schemas.sql
+99:sql/db/02_functions.sql
+100:sql/db/03_staging.sql
+101:sql/db/04_core.sql
+102:sql/db/05_helpdesk_dimensions.sql
+103:sql/db/06_helpdesk_facts.sql
+104:sql/db/07_seed.sql
+105:sql/db/08_helpdesk_sync.sql
+106:sql/elt/01_transform_area.sql
+107:sql/elt/02_transform_clientes.sql
+108:sql/elt/03_transform_personal.sql
+109:sql/elt/04_transform_personal_historico.sql
+110:sql/elt/05_transform_tipo_requerimiento.sql
+111:sql/elt/06_transform_ticket.sql
+112:sql/elt/07_transform_ticket_evento.sql
+113:sql/ingest/00_upsert_staging_template.sql.sql
+
+==============================================================================
+4) JSON INCLUIDOS RELACIONADOS CON N8N
+==============================================================================
+Los workflows n8n pueden contener nodos, URLs o referencias sensibles.
+No deberian contener credenciales exportadas.
+
+3:backups/n8n_coraje/coraje_n8n_workflows_separate_/367pSij9JBbuVGMZ.json
+4:backups/n8n_coraje/coraje_n8n_workflows_separate_/7sImTufyPIbv5J1E.json
+5:backups/n8n_coraje/coraje_n8n_workflows_separate_/9MjSGqTJbMH8eEKI.json
+6:backups/n8n_coraje/coraje_n8n_workflows_separate_/Tjm2tDCE8YqKHFoL.json
+7:backups/n8n_coraje/coraje_n8n_workflows_separate_/XKjSggnh1zwHD8WU.json
+8:backups/n8n_coraje/coraje_n8n_workflows_separate_/pvpP4OeX2H0wlUuj.json
+9:backups/n8n_coraje/coraje_n8n_workflows_separate_/qb8WyXux7mYm9yeY.json
+10:backups/n8n_coraje/coraje_n8n_workflows_separate_/qnrg1r5Ex0FrExdH.json
+
+==============================================================================
+5) BUSQUEDA SUPERFICIAL DE POSIBLES SECRETOS EN ARCHIVOS DE TEXTO
+==============================================================================
+Puede generar falsos positivos. Si aparece un secreto real, NO subas el ZIP.
+
+2:POSTGRES_USER=coraje_app
+3:POSTGRES_PASSWORD=CAMBIA_ESTA_CLAVE_LARGA
+116:        "jsonHeaders": "=\nContent-Type: application/json\nx-coraje-secret: {{$env.CORAJE_REMOTE_N8N_SECRET}}\n",
+1:DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DATABASE
+16:  const password = String(formData.get("password") ?? "");
+105:  DbNull: runtime.NullTypes.DbNull as (new (secret: never) => typeof runtime.DbNull),
+106:  JsonNull: runtime.NullTypes.JsonNull as (new (secret: never) => typeof runtime.JsonNull),
+107:  AnyNull: runtime.NullTypes.AnyNull as (new (secret: never) => typeof runtime.AnyNull),
+1789:   *       password: true
+27:  DbNull: runtime.NullTypes.DbNull as (new (secret: never) => typeof runtime.DbNull),
+28:  JsonNull: runtime.NullTypes.JsonNull as (new (secret: never) => typeof runtime.JsonNull),
+29:  AnyNull: runtime.NullTypes.AnyNull as (new (secret: never) => typeof runtime.AnyNull),
+628:      grep -InE 'DATABASE_URL=|DIRECT_URL=|POSTGRES_PASSWORD=|POSTGRES_USER=|NEXTAUTH_SECRET=|AUTH_SECRET=|JWT_SECRET=|SESSION_SECRET=|CLIENT_SECRET=|PRIVATE_KEY=|BEGIN PRIVATE KEY|api[_-]?key|access[_-]?token|refresh[_-]?token|bearer[[:space:]]+[A-Za-z0-9._-]+|password[[:space:]]*[:=]|passwd[[:space:]]*[:=]|secret[[:space:]]*[:=]|token[[:space:]]*[:=]' "${rel}" 2>/dev/null || true
+642:WARNING_HITS="$(grep -Eic 'DATABASE_URL=|DIRECT_URL=|POSTGRES_PASSWORD=|NEXTAUTH_SECRET=|AUTH_SECRET=|JWT_SECRET=|CLIENT_SECRET=|PRIVATE_KEY=|BEGIN PRIVATE KEY|api[_-]?key|access[_-]?token|refresh[_-]?token|password[[:space:]]*[:=]|passwd[[:space:]]*[:=]|secret[[:space:]]*[:=]|token[[:space:]]*[:=]|EXCLUIDO_POR_TAMANO|credentials?|secrets?|tokens?' "${WARNINGS_FILE}" || true)"
+533:DATABASE_URL="prisma+postgres://localhost:51213/?api_key=..."
+545:DATABASE_URL="postgresql://postgres:TU_PASSWORD@localhost:5433/adm_helpdesk_db"
+572:DATABASE_URL="postgresql://postgres:***@localhost:5433/adm_helpdesk_db"
+
+==============================================================================
+6) ARCHIVOS EXCLUIDOS POR TAMANO
+==============================================================================
+Listado acumulado arriba como EXCLUIDO_POR_TAMANO, si aplica.
+

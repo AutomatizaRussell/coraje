@@ -42,17 +42,7 @@ export async function getPortalTickets(clientId: string) {
     },
   });
 
-  console.log("getPortalTickets DEBUG", {
-    clientId,
-    total: tickets.length,
-    tickets: tickets.map((ticket) => ({
-      id_ticket: ticket.id_ticket,
-      codigo_ticket: ticket.codigo_ticket,
-      id_area_destino: ticket.id_area_destino,
-      id_tipo_req: ticket.id_tipo_req,
-      estado: ticket.dim_estado.nombre_estado,
-    })),
-  });
+
 
   return tickets;
 }

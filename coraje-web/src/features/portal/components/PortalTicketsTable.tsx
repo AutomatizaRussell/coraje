@@ -112,75 +112,63 @@ export function PortalTicketsTable({
           </thead>
 
           <tbody className="divide-y divide-[#e2e8f0]">
+            {tickets.map((ticket) => (
+              <tr
+                key={ticket.id_ticket}
+                className="border-l-4 border-transparent text-zinc-700 transition hover:scale-[1.002] hover:border-[#00a9ce] hover:bg-[#f0f9ff]"
+              >
+                <td className="whitespace-nowrap px-5 py-4 font-mono text-xs font-bold text-[#001871]">
+                  {ticket.codigo_ticket}
+                </td>
 
-            {tickets.map((ticket) => {
-              console.log("PortalTicketsTable DEBUG", {
-                id_ticket: ticket.id_ticket,
-                codigo_ticket: ticket.codigo_ticket,
-                canDelete: canDeleteFromPortal(ticket),
-              });
+                <td className="max-w-xl px-5 py-4 font-semibold text-zinc-900">
+                  <span className="line-clamp-2">
+                    {ticket.descripcion_problema}
+                  </span>
+                </td>
 
-              return (
+                <td className="whitespace-nowrap px-5 py-4 font-medium text-[#718096]">
+                  {formatDate(ticket.fecha_creacion)}
+                </td>
 
-                <tr
-                  key={ticket.id_ticket}
-                  className="border-l-4 border-transparent text-zinc-700 transition hover:scale-[1.002] hover:border-[#00a9ce] hover:bg-[#f0f9ff]"
-                >
-                  <td className="whitespace-nowrap px-5 py-4 font-mono text-xs font-bold text-[#001871]">
-                    {ticket.codigo_ticket}
-                  </td>
+                <td className="whitespace-nowrap px-5 py-4 font-medium text-[#718096]">
+                  {formatDate(ticket.fecha_limite)}
+                </td>
 
-                  <td className="max-w-xl px-5 py-4 font-semibold text-zinc-900">
-                    <span className="line-clamp-2">
-                      {ticket.descripcion_problema}
+                <td className="px-5 py-4">
+                  <span className="inline-flex rounded-full border border-[#e2e8f0] bg-[#edf2f7] px-3 py-1 text-xs font-bold text-[#4a5568]">
+                    {getClientVisibleStatus(ticket)}
+                  </span>
+                </td>
+
+                <td className="whitespace-nowrap px-5 py-4 font-medium text-[#718096]">
+                  {formatDate(ticket.fecha_resolucion)}
+                </td>
+
+                <td className="max-w-md px-5 py-4 text-sm font-medium text-[#718096]">
+                  {ticket.respuesta_final ?? "Sin respuesta todavía"}
+                </td>
+
+                <td className="whitespace-nowrap px-5 py-4">
+                  {canDeleteFromPortal(ticket) ? (
+                    <form action={deleteAction}>
+                      <button
+                        type="submit"
+                        name="ticketId"
+                        value={ticket.id_ticket}
+                        className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-100"
+                      >
+                        Eliminar
+                      </button>
+                    </form>
+                  ) : (
+                    <span className="text-xs font-semibold text-zinc-400">
+                      No disponible
                     </span>
-                  </td>
-
-                  <td className="whitespace-nowrap px-5 py-4 font-medium text-[#718096]">
-                    {formatDate(ticket.fecha_creacion)}
-                  </td>
-
-                  <td className="whitespace-nowrap px-5 py-4 font-medium text-[#718096]">
-                    {formatDate(ticket.fecha_limite)}
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <span className="inline-flex rounded-full border border-[#e2e8f0] bg-[#edf2f7] px-3 py-1 text-xs font-bold text-[#4a5568]">
-                      {getClientVisibleStatus(ticket)}
-                    </span>
-                  </td>
-
-                  <td className="whitespace-nowrap px-5 py-4 font-medium text-[#718096]">
-                    {formatDate(ticket.fecha_resolucion)}
-                  </td>
-
-                  <td className="max-w-md px-5 py-4 text-sm font-medium text-[#718096]">
-                    {ticket.respuesta_final ?? "Sin respuesta todavía"}
-                  </td>
-
-                  <td className="whitespace-nowrap px-5 py-4">
-                    {canDeleteFromPortal(ticket) ? (
-                      <form action={deleteAction}>
-                        <button
-                          type="submit"
-                          name="ticketId"
-                          value={ticket.id_ticket}
-                          className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-100"
-                        >
-                          Eliminar
-                        </button>
-                      </form>
-                    ) : (
-                      <span className="text-xs font-semibold text-zinc-400">
-                        No disponible
-                      </span>
-                    )}
-                  </td>
-                </tr>
-
-              );
-            })}
-
+                  )}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
