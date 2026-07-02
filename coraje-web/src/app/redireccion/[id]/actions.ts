@@ -2,8 +2,8 @@
 
 import { redirect } from "next/navigation";
 
-import { prisma } from "@/lib/prisma";
 import { requireRedireccionAuth } from "@/features/redireccion/data/redireccionAuth";
+import { prisma } from "@/lib/prisma";
 
 /**
  * Valida de forma mínima un UUID recibido desde formulario.
@@ -28,6 +28,65 @@ function assertUuid(value: string, fieldName: string): string {
 }
 
 /**
+ * Dispara el workflow n8n que procesa la cola outbox.
+ *
+ * Este webhook NO es la fuente de verdad. Solo despierta a n8n.
+ * La fuente de verdad sigue siendo PostgreSQL:
+ *
+ *   helpdesk.ticket_sync_outbox
+ *
+ * Si n8n está caído, lento o responde error, no se rompe la redirección del
+ * empleado. El registro ya quedó PENDING y el trigger de respaldo en n8n
+ * deberá recogerlo después.
+ */
+async function kickOutboxWorkflow(): Promise<void> {
+  const url = process.env.N8N_OUTBOX_KICK_URL;
+  const secret = process.env.N8N_OUTBOX_KICK_SECRET;
+
+  if (!url || !secret) {
+    console.warn(
+      "N8N_OUTBOX_KICK_URL o N8N_OUTBOX_KICK_SECRET no están configuradas. El outbox queda pendiente para procesamiento posterior.",
+    );
+    return;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, 3000);
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-coraje-secret": secret,
+      },
+      body: JSON.stringify({
+        source: "coraje-web",
+        event: "ticket_redirected",
+      }),
+      signal: controller.signal,
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      console.warn("n8n outbox kick respondió con estado no exitoso.", {
+        status: response.status,
+        statusText: response.statusText,
+      });
+    }
+  } catch (error) {
+    console.warn(
+      "No se pudo disparar n8n outbox kick. El cron fallback debe procesar el outbox.",
+      error,
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/**
  * Redirige un ticket creado desde el portal hacia un área legacy válida.
  *
  * Reglas actuales:
@@ -42,14 +101,14 @@ function assertUuid(value: string, fieldName: string): string {
  *     1. Si existe helpdesk.routing_rule activa para id_tipo_req, usa esa regla.
  *     2. Si no existe regla, usa core.dim_area.encargado_recepcion.
  * - Se crea un registro PENDING en ticket_sync_outbox con operación CREATE_TICKET.
+ * - Después del commit, se dispara un webhook kick de n8n para procesar la cola.
  *
  * Importante:
- * Esta acción NO escribe en SharePoint todavía.
- * Solo deja PostgreSQL listo para que el futuro flujo n8n PG -> SharePoint
- * procese la sincronización.
+ * Esta acción NO escribe directamente en SharePoint.
  */
 export async function redirectTicketAction(formData: FormData) {
   await requireRedireccionAuth();
+
   const ticketId = assertUuid(String(formData.get("ticketId") ?? ""), "ticketId");
   const areaId = assertUuid(String(formData.get("areaId") ?? ""), "areaId");
   const tipoReqId = assertUuid(
@@ -60,10 +119,6 @@ export async function redirectTicketAction(formData: FormData) {
   await prisma.$transaction(async (tx) => {
     /**
      * 1. Validar que el tipo de requerimiento pertenece al área seleccionada.
-     *
-     * Esto impide combinaciones inválidas como:
-     * - área ADMINISTRACIÓN
-     * - tipo_req perteneciente a LEGAL
      */
     const tipoReq = await tx.dim_tipo_requerimiento.findFirst({
       where: {
@@ -84,8 +139,6 @@ export async function redirectTicketAction(formData: FormData) {
 
     /**
      * 2. Validar que el ticket aún está disponible para redirección.
-     *
-     * Si ya tiene área destino, no se debe redirigir otra vez desde esta vista.
      */
     const ticket = await tx.fact_ticket.findFirst({
       where: {
@@ -109,15 +162,10 @@ export async function redirectTicketAction(formData: FormData) {
 
     /**
      * 3. Resolver encargado interno.
-     *
-     * La regla explícita de helpdesk.routing_rule tiene prioridad.
-     * Si no existe regla activa para ese id_tipo_req, se usa el encargado
-     * general del área legacy seleccionada.
-     *
-     * Se usa SQL directo para evitar depender de nombres de relaciones Prisma
-     * recién introspectadas.
      */
-    const encargadoRows = await tx.$queryRaw<{ encargado_interno: string | null }[]>`
+    const encargadoRows = await tx.$queryRaw<
+      { encargado_interno: string | null }[]
+    >`
       SELECT
           COALESCE(rr.encargado_interno, a.encargado_recepcion) AS encargado_interno
       FROM helpdesk.dim_tipo_requerimiento tr
@@ -135,9 +183,6 @@ export async function redirectTicketAction(formData: FormData) {
 
     /**
      * 4. Actualizar el ticket.
-     *
-     * Se usa SQL directo porque la columna encargado_interno puede no existir
-     * todavía en el cliente Prisma generado si no se ha ejecutado db pull.
      */
     await tx.$executeRaw`
       UPDATE helpdesk.fact_ticket
@@ -154,13 +199,7 @@ export async function redirectTicketAction(formData: FormData) {
     /**
      * 5. Insertar intención de sincronización.
      *
-     * La sincronización real hacia SharePoint todavía no existe.
      * Este registro deja la tarea lista para n8n.
-     *
-     * El ON CONFLICT usa el índice parcial:
-     * uq_ticket_sync_outbox_pending_operation
-     *
-     * Evita duplicar CREATE_TICKET si por alguna razón se reintenta la acción.
      */
     await tx.$executeRaw`
       INSERT INTO helpdesk.ticket_sync_outbox (
@@ -180,7 +219,7 @@ export async function redirectTicketAction(formData: FormData) {
               'id_ticket', ${ticketId}::text,
               'id_area_destino', ${areaId}::text,
               'id_tipo_req', ${tipoReqId}::text,
-              'encargado_interno', ${encargadoInterno}::text
+              'encargado_interno', ${encargadoInterno ?? ""}::text
           )
       )
       ON CONFLICT (id_ticket, operation)
@@ -188,6 +227,14 @@ export async function redirectTicketAction(formData: FormData) {
       DO NOTHING;
     `;
   });
+
+  /**
+   * El webhook se dispara fuera de la transacción.
+   *
+   * Si n8n falla, la acción no debe fallar porque PostgreSQL ya quedó con
+   * el registro PENDING. El workflow n8n debe tener cron fallback.
+   */
+  await kickOutboxWorkflow();
 
   redirect("/redireccion");
 }
